@@ -332,9 +332,13 @@ function App() {
         const esi = parseFloat(emp['ESIC'] || 0);
         const loan = parseFloat(emp['Loan & Advance'] || 0);
         const penalties = parseFloat(emp['Penalities'] || 0);
-        const takeHome = parseFloat(emp['Take Home'] || 0);
         
-        if (grossEarnings > 0 || takeHome !== 0) {
+        // Calculate the employee's net amount (what they should receive)
+        // Total Credits (earnings) - Total Debits (deductions)
+        const employeeNetAmount = grossEarnings + otherEarnings + overtime + extras - esi - loan - penalties;
+        
+        // Only create journal entry if there's any activity
+        if (grossEarnings > 0 || otherEarnings > 0 || overtime > 0 || extras > 0 || employeeNetAmount !== 0) {
           const journalNo = generateJournalNumber('PAYMON', journalIndex);
           const refNo = generateJournalNumber('REFMON', journalIndex);
           journalIndex++;
@@ -395,11 +399,12 @@ function App() {
             });
           }
           
-          if (takeHome !== 0) {
+          // Always add the employee credit/debit line to balance the journal
+          if (employeeNetAmount !== 0) {
             journals.push({
               'Journal No': journalNo, 'Reference No': refNo, 'Date': today, 'Cost center': '',
-              'Particulars': emp.Name, 'Dr/Cr': takeHome > 0 ? 'Cr' : 'Dr',
-              'Amount': Math.abs(takeHome).toFixed(2), 'Narration': CONFIG.narrations.monthly
+              'Particulars': emp.Name, 'Dr/Cr': employeeNetAmount > 0 ? 'Cr' : 'Dr',
+              'Amount': Math.abs(employeeNetAmount).toFixed(2), 'Narration': CONFIG.narrations.monthly
             });
           }
         }
